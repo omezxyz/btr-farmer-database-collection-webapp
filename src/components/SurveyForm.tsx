@@ -17,7 +17,7 @@ export interface SurveyData {
   familyMembers: number;
   householdIncome: string;
   farmingMethods: string;
-  landArea: number;
+  landArea: string; // Changed from number to string
   farmActivities: string;
   cultivationResources: string;
   technologyUse: string;
@@ -35,7 +35,7 @@ export const SurveyForm = () => {
     familyMembers: 0,
     householdIncome: '',
     farmingMethods: '',
-    landArea: 0,
+    landArea: '', // Changed from 0 to ''
     farmActivities: '',
     cultivationResources: '',
     technologyUse: '',
@@ -44,7 +44,7 @@ export const SurveyForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const { error } = await supabase
         .from('farmer_surveys')
@@ -56,7 +56,7 @@ export const SurveyForm = () => {
           family_members: formData.familyMembers,
           household_income: formData.householdIncome,
           farming_methods: formData.farmingMethods,
-          land_area: formData.landArea,
+          land_area: formData.landArea, // Now a string
           farm_activities: formData.farmActivities,
           cultivation_resources: formData.cultivationResources,
           technology_use: formData.technologyUse,
@@ -90,7 +90,7 @@ export const SurveyForm = () => {
       familyMembers: 0,
       householdIncome: '',
       farmingMethods: '',
-      landArea: 0,
+      landArea: '', // Reset as empty string
       farmActivities: '',
       cultivationResources: '',
       technologyUse: '',
@@ -128,64 +128,51 @@ export const SurveyForm = () => {
           <CardContent className="p-8 space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="farmerName" className="text-foreground font-medium">
-                  Farmer Name *
-                </Label>
+                <Label htmlFor="farmerName">Farmer Name *</Label>
                 <Input
                   id="farmerName"
                   type="text"
                   required
-                  className="border-primary/20 focus:border-primary"
                   value={formData.farmerName}
                   onChange={(e) => setFormData(prev => ({ ...prev, farmerName: e.target.value }))}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="village" className="text-foreground font-medium">
-                  Village *
-                </Label>
+                <Label htmlFor="village">Village *</Label>
                 <Input
                   id="village"
                   type="text"
                   required
-                  className="border-primary/20 focus:border-primary"
                   value={formData.village}
                   onChange={(e) => setFormData(prev => ({ ...prev, village: e.target.value }))}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="education" className="text-foreground font-medium">
-                  Education Qualification *
-                </Label>
+                <Label htmlFor="education">Education Qualification *</Label>
                 <Select
                   required
                   value={formData.educationQualification}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, educationQualification: value }))}
                 >
-                  <SelectTrigger className="border-primary/20 focus:border-primary">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select education level" />
                   </SelectTrigger>
                   <SelectContent>
                     {educationLevels.map((level) => (
-                      <SelectItem key={level} value={level}>
-                        {level}
-                      </SelectItem>
+                      <SelectItem key={level} value={level}>{level}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="educationalStatusHousehold" className="text-foreground font-medium">
-                  Educational Status of Household Members *
-                </Label>
+                <Label htmlFor="educationalStatusHousehold">Educational Status of Household Members *</Label>
                 <Textarea
                   id="educationalStatusHousehold"
                   required
-                  className="border-primary/20 focus:border-primary min-h-20"
-                  placeholder="Describe education levels of all household members (e.g., spouse: graduate, children: primary school)"
+                  placeholder="e.g., spouse: graduate, children: primary school"
                   value={formData.educationalStatusHousehold}
                   onChange={(e) => setFormData(prev => ({ ...prev, educationalStatusHousehold: e.target.value }))}
                 />
@@ -193,133 +180,103 @@ export const SurveyForm = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="familyMembers" className="text-foreground font-medium">
-                    Family Members (Number) *
-                  </Label>
+                  <Label htmlFor="familyMembers">Family Members (Number) *</Label>
                   <Input
                     id="familyMembers"
                     type="number"
                     min="1"
                     required
-                    className="border-primary/20 focus:border-primary"
                     value={formData.familyMembers || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, familyMembers: parseInt(e.target.value) || 0 }))}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="landArea" className="text-foreground font-medium">
-                    Land Area (in Bigha) *
-                  </Label>
+                  <Label htmlFor="landArea">Land Area (in Bigha or "No land") *</Label>
                   <Input
                     id="landArea"
-                    type="number"
-                    step="0.1"
-                    min="0"
+                    type="text" // changed from "number"
                     required
-                    className="border-primary/20 focus:border-primary"
-                    value={formData.landArea || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, landArea: parseFloat(e.target.value) || 0 }))}
+                    value={formData.landArea}
+                    onChange={(e) => setFormData(prev => ({ ...prev, landArea: e.target.value }))}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="income" className="text-foreground font-medium">
-                  Household Annual Income *
-                </Label>
+                <Label htmlFor="income">Household Annual Income *</Label>
                 <Select
                   required
                   value={formData.householdIncome}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, householdIncome: value }))}
                 >
-                  <SelectTrigger className="border-primary/20 focus:border-primary">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select income range" />
                   </SelectTrigger>
                   <SelectContent>
                     {incomeRanges.map((range) => (
-                      <SelectItem key={range} value={range}>
-                        {range}
-                      </SelectItem>
+                      <SelectItem key={range} value={range}>{range}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="farmingMethods" className="text-foreground font-medium">
-                  Farming Methods *
-                </Label>
+                <Label htmlFor="farmingMethods">Farming Methods *</Label>
                 <Textarea
                   id="farmingMethods"
                   required
-                  className="border-primary/20 focus:border-primary min-h-20"
-                  placeholder="Describe your farming methods (e.g., organic, traditional, modern techniques)"
+                  placeholder="e.g., organic, traditional, modern techniques"
                   value={formData.farmingMethods}
                   onChange={(e) => setFormData(prev => ({ ...prev, farmingMethods: e.target.value }))}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="farmActivities" className="text-foreground font-medium">
-                  Type of Farm Activities *
-                </Label>
+                <Label htmlFor="farmActivities">Type of Farm Activities *</Label>
                 <Textarea
                   id="farmActivities"
                   required
-                  className="border-primary/20 focus:border-primary min-h-20"
-                  placeholder="e.g., crop farming, livestock, poultry, dairy, horticulture"
+                  placeholder="e.g., crop farming, livestock, poultry"
                   value={formData.farmActivities}
                   onChange={(e) => setFormData(prev => ({ ...prev, farmActivities: e.target.value }))}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cultivationResources" className="text-foreground font-medium">
-                  Resources for Cultivation *
-                </Label>
+                <Label htmlFor="cultivationResources">Resources for Cultivation *</Label>
                 <Textarea
                   id="cultivationResources"
                   required
-                  className="border-primary/20 focus:border-primary min-h-20"
-                  placeholder="e.g., tractors, irrigation systems, seeds, fertilizers, labor"
+                  placeholder="e.g., tractors, irrigation systems"
                   value={formData.cultivationResources}
                   onChange={(e) => setFormData(prev => ({ ...prev, cultivationResources: e.target.value }))}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="technologyUse" className="text-foreground font-medium">
-                  Use of Technology *
-                </Label>
+                <Label htmlFor="technologyUse">Use of Technology *</Label>
                 <Textarea
                   id="technologyUse"
                   required
-                  className="border-primary/20 focus:border-primary min-h-20"
-                  placeholder="Describe technology usage (e.g., mobile apps, GPS, drones, sensors)"
+                  placeholder="e.g., mobile apps, drones"
                   value={formData.technologyUse}
                   onChange={(e) => setFormData(prev => ({ ...prev, technologyUse: e.target.value }))}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="scientificMethod" className="text-foreground font-medium">
-                  Use of Scientific Methods *
-                </Label>
+                <Label htmlFor="scientificMethod">Use of Scientific Methods *</Label>
                 <Textarea
                   id="scientificMethod"
                   required
-                  className="border-primary/20 focus:border-primary min-h-20"
-                  placeholder="Describe scientific methods used (e.g., soil testing, weather monitoring, crop rotation)"
+                  placeholder="e.g., soil testing, crop rotation"
                   value={formData.scientificMethod}
                   onChange={(e) => setFormData(prev => ({ ...prev, scientificMethod: e.target.value }))}
                 />
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-primary to-success hover:from-primary/90 hover:to-success/90 text-lg py-6"
-              >
+              <Button type="submit" className="w-full text-lg py-6">
                 Submit Survey
               </Button>
             </form>

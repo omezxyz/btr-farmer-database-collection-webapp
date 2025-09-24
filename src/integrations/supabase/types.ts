@@ -26,7 +26,7 @@ export type Database = {
           farming_methods: string
           household_income: string
           id: string
-          land_area: number
+          land_area: SVGStringList
           scientific_method: string
           submitted_at: string
           technology_use: string
@@ -43,7 +43,7 @@ export type Database = {
           farming_methods: string
           household_income: string
           id?: string
-          land_area: number
+          land_area: string
           scientific_method: string
           submitted_at?: string
           technology_use: string
@@ -60,7 +60,7 @@ export type Database = {
           farming_methods?: string
           household_income?: string
           id?: string
-          land_area?: number
+          land_area?: string
           scientific_method?: string
           submitted_at?: string
           technology_use?: string
