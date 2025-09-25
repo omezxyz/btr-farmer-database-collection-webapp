@@ -27,6 +27,7 @@ export type Database = {
           household_income: string
           id: string
           land_area: SVGStringList
+         pm_kisan: string // <-- NEW FIELD
           scientific_method: string
           submitted_at: string
           technology_use: string
@@ -44,6 +45,7 @@ export type Database = {
           household_income: string
           id?: string
           land_area: string
+         pm_kisan: string // <-- NEW FIELD
           scientific_method: string
           submitted_at?: string
           technology_use: string
@@ -61,6 +63,7 @@ export type Database = {
           household_income?: string
           id?: string
           land_area?: string
+         pm_kisan: string // <-- NEW FIELD
           scientific_method?: string
           submitted_at?: string
           technology_use?: string

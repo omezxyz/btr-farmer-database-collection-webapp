@@ -18,6 +18,7 @@ export interface SurveyData {
   householdIncome: string;
   farmingMethods: string;
   landArea: string; // Changed from number to string
+  pmKisan: string; // "Yes" or "No"
   farmActivities: string;
   cultivationResources: string;
   technologyUse: string;
@@ -36,6 +37,7 @@ export const SurveyForm = () => {
     householdIncome: '',
     farmingMethods: '',
     landArea: '', // Changed from 0 to ''
+    pmKisan: '', // "Yes" or "No"
     farmActivities: '',
     cultivationResources: '',
     technologyUse: '',
@@ -57,6 +59,7 @@ export const SurveyForm = () => {
           household_income: formData.householdIncome,
           farming_methods: formData.farmingMethods,
           land_area: formData.landArea, // Now a string
+          pm_kisan: formData.pmKisan, // new field
           farm_activities: formData.farmActivities,
           cultivation_resources: formData.cultivationResources,
           technology_use: formData.technologyUse,
@@ -91,6 +94,7 @@ export const SurveyForm = () => {
       householdIncome: '',
       farmingMethods: '',
       landArea: '', // Reset as empty string
+      pmKisan: '', // reset
       farmActivities: '',
       cultivationResources: '',
       technologyUse: '',
@@ -202,6 +206,23 @@ export const SurveyForm = () => {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+  <Label htmlFor="pmKisan">Are you a beneficiary of PM-Kisan Scheme? *</Label>
+  <Select
+    required
+    value={formData.pmKisan}
+    onValueChange={(value) => setFormData(prev => ({ ...prev, pmKisan: value }))}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select Yes or No" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="Yes">Yes</SelectItem>
+      <SelectItem value="No">No</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="income">Household Annual Income *</Label>
