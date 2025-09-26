@@ -26,7 +26,7 @@ export type Database = {
           farming_methods: string
           household_income: string
           id: string
-          land_area: SVGStringList
+          land_area: string
          pm_kisan: string // <-- NEW FIELD
           scientific_method: string
           submitted_at: string

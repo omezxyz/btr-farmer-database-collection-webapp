@@ -363,6 +363,9 @@
 //   );
 // };
 //new with filter village, search by farmer name, edit data features
+
+
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -386,6 +389,69 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+// IMPORTANT: import your generated types to keep in sync with Supabase
+import type { Database } from "@/integrations/supabase/types"; // adjust path if different
+
+// Exact Update type from generated types
+type FarmerSurveysUpdate =
+  Database["public"]["Tables"]["farmer_surveys"]["Update"];
+
+// Map camelCase UI keys to snake_case DB columns (controls edit + update)
+const FIELD_MAP: Record<string, keyof FarmerSurveysUpdate> = {
+  farmerName: "farmer_name",
+  village: "village",
+  educationQualification: "education_qualification",
+  educationalStatusHousehold: "educational_status_household",
+  familyMembers: "family_members",
+  householdIncome: "household_income",
+  farmingMethods: "farming_methods",
+  landArea: "land_area",
+  pmKisan: "pm_kisan",
+  farmActivities: "farm_activities",
+  cultivationResources: "cultivation_resources",
+  technologyUse: "technology_use",
+  scientificMethod: "scientific_method",
+};
+
+// Build a safe update payload: snake_case + coercions + pm_kisan as TEXT/null
+const toSnakeUpdatePayload = (s: SurveyData): FarmerSurveysUpdate => {
+  const toNull = (v: any): string | null => {
+    if (v === undefined || v === null) return null;
+    const t = String(v).trim();
+    return t.length ? t : null;
+  };
+  const toNumberOrNull = (v: any): number | null => {
+    if (v === undefined || v === null || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  // pm_kisan is TEXT and nullable; always include the key
+  const toPmText = (v: any): string => {
+    const sVal = (v ?? "").toLowerCase();
+    if (sVal === "yes") return "Yes";
+    if (sVal === "no") return "No";
+    // If Update type is string (not string|null) yet DB accepts null, cast the null
+    return (null as unknown) as string;
+  };
+
+  const payload: FarmerSurveysUpdate = {
+    farmer_name: toNull(s.farmerName) ?? undefined,
+    village: toNull(s.village) ?? undefined,
+    education_qualification: toNull(s.educationQualification) ?? undefined,
+    educational_status_household: toNull(s.educationalStatusHousehold) ?? undefined,
+    family_members: toNumberOrNull(s.familyMembers) ?? undefined,
+    household_income: toNull(s.householdIncome) ?? undefined, // TEXT range
+    farming_methods: toNull(s.farmingMethods) ?? undefined,
+    land_area: toNull(s.landArea) ?? undefined, // TEXT
+    pm_kisan: toPmText(s.pmKisan), // required key in Update type
+    farm_activities: toNull(s.farmActivities) ?? undefined,
+    cultivation_resources: toNull(s.cultivationResources) ?? undefined,
+    technology_use: toNull(s.technologyUse) ?? undefined,
+    scientific_method: toNull(s.scientificMethod) ?? undefined,
+  };
+
+  return payload;
+};
 
 export const SurveyResponses = () => {
   const { toast } = useToast();
@@ -405,7 +471,7 @@ export const SurveyResponses = () => {
 
         if (error) throw error;
 
-        const transformedData: SurveyData[] = data.map((survey) => ({
+        const transformedData: SurveyData[] = (data ?? []).map((survey: any) => ({
           id: survey.id,
           farmerName: survey.farmer_name,
           village: survey.village,
@@ -415,7 +481,7 @@ export const SurveyResponses = () => {
           householdIncome: survey.household_income,
           farmingMethods: survey.farming_methods,
           landArea: survey.land_area,
-          pmKisan: survey.pm_kisan, // <-- NEW FIELD
+          pmKisan: survey.pm_kisan, // TEXT "Yes" | "No" | null (DB)
           farmActivities: survey.farm_activities,
           cultivationResources: survey.cultivation_resources,
           technologyUse: survey.technology_use,
@@ -465,111 +531,110 @@ export const SurveyResponses = () => {
   }
 
   // Excel export
-  // Excel export
-const exportToExcel = () => {
-  if (filteredSurveys.length === 0) {
-    toast({
-      title: "No Data to Export",
-      description: "Please apply a filter with results to export.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  const excelData = filteredSurveys.map((survey) => ({
-    "Farmer Name": survey.farmerName,
-    Village: survey.village,
-    "Education Qualification": survey.educationQualification,
-    "Educational Status (HH)": survey.educationalStatusHousehold,
-    "Family Members": survey.familyMembers,
-    "Household Income": survey.householdIncome,
-    "Farming Methods": survey.farmingMethods,
-    "Land Area (Bigha)": survey.landArea,
-    "PM Kisan": survey.pmKisan, // Included PM Kisan
-    "Farm Activities": survey.farmActivities,
-    "Cultivation Resources": survey.cultivationResources,
-    "Technology Use": survey.technologyUse,
-    "Scientific Method": survey.scientificMethod,
-    "Submitted At": new Date(survey.submittedAt).toLocaleString(), // Readable date
-  }));
-
-  const worksheet = XLSX.utils.json_to_sheet(excelData, { cellDates: false });
-
-  // Dynamically calculate column widths
-  const maxLengths =
-    excelData.length > 0
-      ? Object.keys(excelData[0]).map((key) => ({
-          wch: Math.max(
-            key.length,
-            ...excelData.map((row) =>
-              row[key] ? row[key].toString().length : 0
-            )
-          ),
-        }))
-      : [];
-  worksheet["!cols"] = maxLengths;
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Survey Responses");
-
-  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([excelBuffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-
-  saveAs(
-    blob,
-    `farmer_survey_responses_${new Date().toISOString().split("T")[0]}.xlsx`
-  );
-
-  toast({
-    title: "Export Successful!",
-    description: `Exported ${filteredSurveys.length} survey responses to Excel.`,
-  });
-};
-
-
-  // Save edits
-  const handleUpdate = async () => {
-    if (!editSurvey) return;
-
-    try {
-      const { error } = await supabase
-        .from("farmer_surveys")
-        .update({
-          farmer_name: editSurvey.farmerName,
-          village: editSurvey.village,
-          education_qualification: editSurvey.educationQualification,
-          educational_status_household: editSurvey.educationalStatusHousehold,
-          family_members: editSurvey.familyMembers,
-          household_income: editSurvey.householdIncome,
-          farming_methods: editSurvey.farmingMethods,
-          land_area: editSurvey.landArea,
-          pm_kisan: editSurvey.pmKisan, // <-- NEW FIELD
-          farm_activities: editSurvey.farmActivities,
-          cultivation_resources: editSurvey.cultivationResources,
-          technology_use: editSurvey.technologyUse,
-          scientific_method: editSurvey.scientificMethod,
-        })
-        .eq("id", editSurvey.id);
-
-      if (error) throw error;
-
-      setSurveys((prev) =>
-        prev.map((s) => (s.id === editSurvey.id ? editSurvey : s))
-      );
-      setEditSurvey(null);
-
-      toast({ title: "Update Successful!", description: "Survey updated." });
-    } catch (err) {
-      console.error("Error updating survey:", err);
+  const exportToExcel = () => {
+    if (filteredSurveys.length === 0) {
       toast({
-        title: "Error",
-        description: "Failed to update survey.",
+        title: "No Data to Export",
+        description: "Please apply a filter with results to export.",
         variant: "destructive",
       });
+      return;
     }
+
+    const excelData = filteredSurveys.map((survey) => ({
+      "Farmer Name": survey.farmerName,
+      Village: survey.village,
+      "Education Qualification": survey.educationQualification,
+      "Educational Status (HH)": survey.educationalStatusHousehold,
+      "Family Members": survey.familyMembers,
+      "Household Income": survey.householdIncome,
+      "Farming Methods": survey.farmingMethods,
+      "Land Area (Bigha)": survey.landArea,
+      "PM Kisan": survey.pmKisan,
+      "Farm Activities": survey.farmActivities,
+      "Cultivation Resources": survey.cultivationResources,
+      "Technology Use": survey.technologyUse,
+      "Scientific Method": survey.scientificMethod,
+      "Submitted At": new Date(survey.submittedAt).toLocaleString(),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData, { cellDates: false });
+
+    const maxLengths =
+      excelData.length > 0
+        ? Object.keys(excelData[0]).map((key) => ({
+            wch: Math.max(
+              key.length,
+              ...excelData.map((row) => (row[key] ? row[key].toString().length : 0))
+            ),
+          }))
+        : [];
+    (worksheet as any)["!cols"] = maxLengths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Survey Responses");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    saveAs(
+      blob,
+      `farmer_survey_responses_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
+
+    toast({
+      title: "Export Successful!",
+      description: `Exported ${filteredSurveys.length} survey responses to Excel.`,
+    });
   };
+
+  // Save edits with safe, snake_case payload
+  const handleUpdate = async () => {
+  if (!editSurvey) return;
+
+  try {
+    const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+    if (sessionErr) console.warn("Session error:", sessionErr);
+    console.log("Session user:", sessionData?.session?.user?.id);
+
+    const payload = toSnakeUpdatePayload(editSurvey);
+    console.log("Updating ID:", editSurvey.id, "Payload:", payload);
+
+    const { data, error } = await supabase
+      .from("farmer_surveys")
+      .update(payload)
+      .eq("id", editSurvey.id)
+      .select();
+
+    if (error) {
+      console.error("Supabase update error:", {
+        name: (error as any)?.name,
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+      });
+      throw error;
+    }
+    if (!data || data.length === 0) {
+      throw new Error("No rows updated. Check id matches a row and RLS update policy.");
+    }
+
+    setSurveys((prev) => prev.map((s) => (s.id === editSurvey.id ? editSurvey : s)));
+    setEditSurvey(null);
+
+    toast({ title: "Update Successful!", description: "Survey updated." });
+  } catch (err: any) {
+    toast({
+      title: "Update Failed",
+      description: err?.message ?? "Unknown error",
+      variant: "destructive",
+    });
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 p-4 sm:p-6">
@@ -718,23 +783,54 @@ const exportToExcel = () => {
               </div>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(editSurvey).map(([key, value]) =>
-                key !== "id" && key !== "submittedAt" ? (
+              {Object.keys(FIELD_MAP).map((key) => {
+                const value = (editSurvey as any)[key];
+
+                if (key === "pmKisan") {
+                  return (
+                    <div key={key}>
+                      <label className="block text-sm font-medium mb-1">
+                        PM Kisan
+                      </label>
+                      <select
+                        value={editSurvey.pmKisan || ""}
+                        onChange={(e) =>
+                          setEditSurvey({ ...editSurvey, pmKisan: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-input rounded-md"
+                      >
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+                  );
+                }
+
+                const label = key
+                  .replace(/([A-Z])/g, " $1")
+                  .replace(/^./, (c) => c.toUpperCase());
+
+                const isNumber = key === "familyMembers";
+                return (
                   <div key={key}>
-                    <label className="block text-sm font-medium mb-1 capitalize">
-                      {key}
+                    <label className="block text-sm font-medium mb-1">
+                      {label}
                     </label>
                     <input
-                      type="text"
-                      value={value as string}
+                      type={isNumber ? "number" : "text"}
+                      value={value ?? (isNumber ? 0 : "")}
                       onChange={(e) =>
-                        setEditSurvey({ ...editSurvey, [key]: e.target.value })
+                        setEditSurvey((prev) => ({
+                          ...prev!,
+                          [key]: isNumber ? Number(e.target.value || 0) : e.target.value,
+                        }))
                       }
                       className="w-full px-3 py-2 border border-input rounded-md"
                     />
                   </div>
-                ) : null
-              )}
+                );
+              })}
             </CardContent>
           </Card>
         )}
@@ -773,8 +869,7 @@ const exportToExcel = () => {
                 <p>Technology: {selectedSurvey.technologyUse}</p>
                 <p>Scientific: {selectedSurvey.scientificMethod}</p>
                 <p>
-                  Submitted:{" "}
-                  {new Date(selectedSurvey.submittedAt).toLocaleString()}
+                  Submitted: {new Date(selectedSurvey.submittedAt).toLocaleString()}
                 </p>
               </div>
             </CardContent>

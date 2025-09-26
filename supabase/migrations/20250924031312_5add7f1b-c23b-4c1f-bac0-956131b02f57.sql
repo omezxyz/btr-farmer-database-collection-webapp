@@ -9,6 +9,7 @@ CREATE TABLE public.farmer_surveys (
   household_income TEXT NOT NULL,
   farming_methods TEXT NOT NULL,
   land_area TEXT NOT NULL,
+  pm_kisan TEXT NULL,
   farm_activities TEXT NOT NULL,
   cultivation_resources TEXT NOT NULL,
   technology_use TEXT NOT NULL,
